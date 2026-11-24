@@ -1,0 +1,6 @@
+# The app lives in the pocket-pals-netlify/ subfolder. Point Netlify at it so the
+# site (public/) and the sync function (netlify/functions/) are both deployed.
+[build]
+  base = "pocket-pals-netlify"
+  publish = "public"
+  functions = "netlify/functions"
