@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pocket Pals">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#7c4dff">
+<title>Pocket Pals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2b2350;--bg:#fff4dc;--p:#7c4dff;--pink:#ff5fa2;--yel:#ffd23f;--teal:#2ec4b6;--org:#ff8c42;--blue:#4cc9f0;--green:#4cd964;--r:22px;--kc:#7c4dff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--ink);font-family:'Fredoka',ui-rounded,'SF Pro Rounded',system-ui,sans-serif;color:var(--ink);-webkit-text-size-adjust:100%;overscroll-behavior:none;touch-action:manipulation}
+body.noscroll .scroll{overflow:hidden}
+button{font-family:inherit;color:inherit}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;background-color:var(--bg);background-image:radial-gradient(rgba(124,77,255,.13) 2.5px,transparent 3px);background-size:26px 26px;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 28px}
+.scroll.pt{padding-top:calc(16px + env(safe-area-inset-top))}
+h1,h2,h3{margin:0}
+.hint,.sub{font-size:14px;opacity:.7;font-weight:500}
+.err{color:#d6204f;font-weight:600;min-height:22px;font-size:15px;margin:6px 0}
+
+/* cards & buttons */
+.card{background:#fff;border:3px solid var(--ink);border-radius:var(--r);box-shadow:0 5px 0 var(--ink);padding:14px;margin:0 0 18px}
+.card h3{font-size:20px;margin-bottom:8px}
+.btn{font-weight:600;font-size:17px;border:3px solid var(--ink);background:var(--yel);border-radius:16px;padding:11px 16px;box-shadow:0 4px 0 var(--ink);transition:transform .08s,box-shadow .08s;cursor:pointer;line-height:1.1}
+.btn:active{transform:translateY(4px);box-shadow:0 0 0 var(--ink)}
+.btn.go{background:var(--green)}.btn.pink{background:var(--pink);color:#fff}.btn.purple{background:var(--p);color:#fff}.btn.ghost{background:#fff}.btn.danger{background:#ff6b6b;color:#fff}
+.btn.sm{font-size:15px;padding:8px 12px;border-radius:13px;box-shadow:0 3px 0 var(--ink)}
+.btn.block{display:block;width:100%;margin-top:10px}
+.btn.big{font-size:21px;padding:15px}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border:2px solid var(--ink);border-radius:99px;font-weight:600;font-size:14px;background:#fff;white-space:nowrap}
+.pill.money{background:#c9f7c3}.pill.time{background:#cdeeff}.pill.neg{background:#ffd3d9}.pill.warn{background:#ffe9a6}
+.bar{height:20px;border:3px solid var(--ink);border-radius:99px;background:#fff;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;background:var(--c,var(--teal));border-right:3px solid var(--ink);border-radius:99px;transition:width .8s cubic-bezier(.2,1.4,.4,1);min-width:0}
+.bar i[style*="width:0%"]{border-right:0}
+
+/* headers */
+.khead{display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top)) 14px 14px;background:var(--kc);border-bottom:3px solid var(--ink);color:#fff;flex-wrap:wrap}
+.kme{display:flex;align-items:center;gap:12px;flex:1;min-width:0;order:2;width:100%}
+.hbtn{font-weight:600;font-size:14px;background:rgba(255,255,255,.9);color:var(--ink);border:2.5px solid var(--ink);border-radius:99px;padding:5px 12px;order:1;box-shadow:0 2px 0 var(--ink)}
+.flame{order:1;margin-left:auto;background:#fff;color:var(--ink);border:2.5px solid var(--ink);border-radius:99px;padding:4px 12px;font-weight:700;font-size:16px;box-shadow:0 2px 0 var(--ink)}
+.flame.off{opacity:.6;filter:grayscale(1)}
+.bigav{width:68px;height:68px;border-radius:50%;background:#fff;border:3px solid var(--ink);display:grid;place-items:center;font-size:40px;animation:bob 2.4s ease-in-out infinite;box-shadow:0 4px 0 var(--ink)}
+.hi{font-size:28px;font-weight:700;line-height:1.05;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.kme .sub{color:#fff;opacity:.95}
+.phead{background:var(--ink);color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:10px}
+.phead h1{font-size:26px;flex:1}
+.phead .hbtn{order:0}
+
+/* tabs */
+.tabbar{display:flex;background:#fff;border-top:3px solid var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:4px}
+.tab{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:0;font-size:12px;font-weight:600;padding:5px 0;border-radius:16px;opacity:.65}
+.tab span{font-size:24px;line-height:1.15;transition:transform .2s}
+.tab.on{background:var(--yel);opacity:1;box-shadow:inset 0 0 0 2.5px var(--ink)}
+.tab.on span{animation:pop .4s}
+.dot{position:relative}.dot::after{content:'';position:absolute;top:2px;right:calc(50% - 22px);width:11px;height:11px;border-radius:50%;background:#ff3b6b;border:2px solid #fff}
+
+/* picker */
+.pick{text-align:center}
+.logo{font-size:84px;animation:bob 2.2s ease-in-out infinite;display:inline-block}
+.pick h1,.welcome h1{font-size:46px;color:var(--p);text-shadow:0 4px 0 var(--ink),2px 2px 0 var(--ink),-2px 2px 0 var(--ink),2px -2px 0 var(--ink),-2px -2px 0 var(--ink);letter-spacing:1px;margin:2px 0 4px}
+.tag{font-weight:500;margin:0 0 18px;opacity:.8}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.tile{border:3px solid var(--ink);border-radius:26px;background:var(--kc);box-shadow:0 6px 0 var(--ink);padding:18px 8px 14px;color:#fff;font-size:22px;font-weight:700;transition:transform .08s,box-shadow .08s;cursor:pointer}
+.tile:active{transform:translateY(5px);box-shadow:0 1px 0 var(--ink)}
+.tile .av{width:84px;height:84px;margin:0 auto 8px;border-radius:50%;background:#fff;border:3px solid var(--ink);display:grid;place-items:center;font-size:50px}
+.tile.parent{background:var(--ink);grid-column:1/-1}
+.tile.parent .av{width:60px;height:60px;font-size:34px;background:var(--yel)}
+.tile:nth-child(odd) .av{animation:bob 2.6s ease-in-out infinite}.tile:nth-child(even) .av{animation:bob 2.9s .3s ease-in-out infinite}
+
+.welcome{text-align:center}.welcome .card{text-align:left}
+.pininput,input[type=text],input[type=number],input:not([type]),input[type=password],select{width:100%;font:inherit;font-size:18px;font-weight:500;padding:11px 14px;border:3px solid var(--ink);border-radius:14px;background:#fffdf5;color:var(--ink);outline:none}
+input:focus{box-shadow:0 0 0 4px rgba(124,77,255,.35)}
+.pininput{letter-spacing:10px;text-align:center;font-size:24px}
+.krow{margin-bottom:12px}.krow input{margin-bottom:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font-size:17px;font-weight:600;border:2.5px solid var(--ink);border-radius:14px;background:#fff;padding:6px 11px;box-shadow:0 3px 0 var(--ink);transition:transform .08s}
+.chip.on{background:var(--yel);transform:translateY(2px);box-shadow:0 1px 0 var(--ink)}
+.chip.sw{width:38px;height:38px;border-radius:50%;padding:0}
+.chip.sw.on{outline:3px solid var(--ink);outline-offset:2px}
+.fld{display:block;margin:0 0 14px}.fld>span{display:block;font-weight:600;margin-bottom:5px;font-size:15px}
+
+/* jar */
+.jarcard{text-align:center;background:linear-gradient(#fff,#f2ecff)}
+.jarwrap{width:170px;margin:0 auto;position:relative}
+.jar{width:100%;display:block;overflow:visible}
+.jar .wave{animation:wave 2.4s linear infinite}
+.jar .bub{animation:rise 3.2s ease-in infinite;opacity:0}
+.jar .bub:nth-of-type(2){animation-delay:1s}.jar .bub:nth-of-type(3){animation-delay:2s}
+.jar .coinf{animation:bob 2s ease-in-out infinite}
+.balance{font-size:54px;font-weight:700;line-height:1;margin-top:2px;text-shadow:0 3px 0 rgba(43,35,80,.18)}
+.balsub{font-weight:500;opacity:.7;margin-bottom:12px}
+.goalrow{display:flex;align-items:center;gap:10px;text-align:left;margin-bottom:8px}
+.gemo{font-size:34px}.goalrow b{font-size:19px;display:block;line-height:1.1}.goalrow .pill{margin-left:auto}
+.gtxt{font-weight:600;margin-top:8px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.stat{margin:0;text-align:center;padding:12px 8px}
+.stat .ico{font-size:30px}.stat .val{font-size:26px;font-weight:700;line-height:1.1}.stat .sub{font-size:13px}
+.stat.clickable{cursor:pointer}
+
+/* quests */
+.q{display:flex;align-items:center;gap:12px;padding:10px 4px;border-bottom:2.5px dashed rgba(43,35,80,.18);cursor:pointer}
+.q:last-child{border-bottom:0}
+.chk{flex:none;width:40px;height:40px;border-radius:13px;border:3px solid var(--ink);background:#fff;display:grid;place-items:center;font-size:24px;box-shadow:0 3px 0 var(--ink);transition:background .15s}
+.q.ok .chk{background:var(--green)}.q.wait .chk{background:var(--yel)}
+.q.ok .chk::after{content:'✓';font-weight:700;animation:pop .4s}.q.wait .chk::after{content:'⏳';font-size:20px}
+.qe{font-size:28px}.qt{font-weight:600;font-size:18px;flex:1;line-height:1.1}
+.q.ok .qt{text-decoration:line-through;opacity:.55}
+.lockbanner{background:#ffe9a6;border:3px dashed var(--ink);border-radius:16px;padding:10px 12px;font-weight:600;margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.lockbanner .big{font-size:32px}
+.unlockbanner{background:#c9f7c3;border:3px solid var(--ink);border-radius:16px;padding:10px 12px;font-weight:600;margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.locked{filter:grayscale(.85);opacity:.5;pointer-events:none}
+.job{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:2.5px dashed rgba(43,35,80,.18)}
+.job:last-child{border-bottom:0}
+.job .jm{flex:1;min-width:0}.job .jt{font-weight:600;font-size:18px;line-height:1.1}.job .pills{display:flex;gap:6px;margin-top:5px;flex-wrap:wrap}
+.job.done{opacity:.6}
+.sec{font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.65;margin:6px 4px 8px}
+
+/* rows */
+.row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:2.5px dashed rgba(43,35,80,.18);cursor:pointer}
+.row:last-child{border-bottom:0}
+.remo{font-size:28px;flex:none;width:36px;text-align:center}.rmain{flex:1;min-width:0}.rmain b{font-size:17px;line-height:1.1;display:block}.chev{font-size:24px;opacity:.4}
+.row .amt{font-weight:700;font-size:17px}.amt.pos{color:#1c9a3c}.amt.neg{color:#d6204f}
+.empty{text-align:center;padding:18px 8px;font-weight:500;opacity:.75}
+.empty .e{font-size:44px;display:block}
+
+/* parent kid cards */
+.kidcard{cursor:pointer}
+.kc-top{display:flex;align-items:center;gap:12px}
+.kc-top .av{width:54px;height:54px;border-radius:50%;border:3px solid var(--ink);display:grid;place-items:center;font-size:32px;background:var(--kc)}
+.kc-top b{font-size:21px;display:block;line-height:1.1}.kbal{margin-left:auto;font-size:28px;font-weight:700}
+.kc-row{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.approve{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:2.5px dashed rgba(43,35,80,.18)}
+.approve:last-child{border-bottom:0}
+.approve .btn{padding:8px 11px}
+.walletbig{text-align:center}
+.walletbig .balance{font-size:50px}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.acts .btn{font-size:16px;padding:12px 6px}
+.kselect{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 14px;margin:0 -2px}
+.kselect .chip{flex:none;font-size:18px}
+.toggle{display:flex;align-items:center;gap:12px}
+.sw-btn{flex:none;width:58px;height:34px;border-radius:99px;border:3px solid var(--ink);background:#ddd;position:relative;transition:background .2s}
+.sw-btn::after{content:'';position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff;border:2.5px solid var(--ink);transition:transform .2s}
+.sw-btn.on{background:var(--green)}.sw-btn.on::after{transform:translateX(24px)}
+
+/* sheet */
+#sheet .backdrop{position:fixed;inset:0;background:rgba(43,35,80,.55);animation:fade .2s;z-index:50}
+#sheet .sheet{position:fixed;left:0;right:0;bottom:0;max-width:560px;margin:0 auto;background:#fffdf5;border:3px solid var(--ink);border-bottom:0;border-radius:28px 28px 0 0;padding:10px 18px calc(20px + env(safe-area-inset-bottom));max-height:92dvh;overflow-y:auto;z-index:51;animation:up .28s cubic-bezier(.2,1.2,.4,1);-webkit-overflow-scrolling:touch}
+.grab{width:52px;height:6px;border-radius:9px;background:var(--ink);opacity:.25;margin:0 auto 10px}
+.sheet h2{font-size:24px;margin-bottom:12px}
+.dots{display:flex;gap:14px;justify-content:center;margin:6px 0 16px}
+.dots i{width:20px;height:20px;border-radius:50%;border:3px solid var(--ink);background:#fff;transition:background .1s,transform .1s}
+.dots i.on{background:var(--p);transform:scale(1.15)}
+.dots.shake{animation:shake .4s}
+.pad{display:grid;grid-template-columns:repeat(3,74px);gap:12px;justify-content:center}
+.key{width:74px;height:74px;border-radius:50%;border:3px solid var(--ink);background:#fff;font-size:30px;font-weight:600;box-shadow:0 4px 0 var(--ink);transition:transform .08s,box-shadow .08s}
+.key:active{transform:translateY(4px);box-shadow:0 0 0 var(--ink);background:var(--yel)}
+.toast{position:fixed;bottom:calc(92px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;font-weight:600;padding:12px 18px;border-radius:99px;z-index:99;animation:toast 2.6s forwards;max-width:90vw;text-align:center;border:3px solid #fff;box-shadow:0 5px 0 rgba(0,0,0,.25)}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:98;width:100%;height:100%}
+
+@keyframes bob{50%{transform:translateY(-6px) rotate(-2deg)}}
+@keyframes pop{0%{transform:scale(.3)}60%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes wave{to{transform:translateX(-100px)}}
+@keyframes rise{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translateY(-70px);opacity:0}}
+@keyframes up{from{transform:translateY(100%)}}
+@keyframes fade{from{opacity:0}}
+@keyframes shake{20%,60%{transform:translateX(-10px)}40%,80%{transform:translateX(10px)}}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,30px) scale(.8)}10%{opacity:1;transform:translate(-50%,0) scale(1)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,10px)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"></div>
+<canvas id="fx"></canvas>
+<script>
+/* ================= helpers ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,9);
+const pad2=n=>String(n).padStart(2,'0');
+const dkey=(d=new Date())=>d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+const today=()=>dkey();
+const parseKey=k=>new Date(+k.slice(0,4),+k.slice(5,7)-1,+k.slice(8,10));
+const weekKey=(d=new Date())=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return dkey(x)};
+const money=c=>{c=Math.round(c||0);const a=Math.abs(c);const s=(a%100===0)?String(a/100):(a/100).toFixed(2);return(c<0?'-':'')+'$'+s};
+const parseMoney=s=>{const n=parseFloat(String(s).replace(/[^0-9.]/g,''));return isFinite(n)?Math.round(n*100):0};
+const fmtMins=m=>{m=Math.round(m||0);const a=Math.abs(m),h=Math.floor(a/60),r=a%60;const t=h?(h+'h'+(r?' '+r+'m':'')):(r+' min');return(m<0?'-':'')+t};
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtDate=ts=>{const d=new Date(ts);const k=dkey(d);if(k===today())return'Today';const y=new Date();y.setDate(y.getDate()-1);if(k===dkey(y))return'Yesterday';return d.getDate()+' '+MONTHS[d.getMonth()]};
+const AV=['🦊','🐼','🐯','🐸','🦄','🐙','🐲','🦖','🐵','🐱','🐶','🦁','🐰','🐨','🚀','⚽'];
+const COLORS=['#7c4dff','#ff5fa2','#2ec4b6','#ff8c42','#4cc9f0','#8ac926'];
+const JOBEMO=['🧹','🍽️','🐕','🚗','🌱','🧺','🗑️','📚','🛏️','🍳','🧽','🪟','🛒','🧸','🪥','🐈'];
+const GOALEMO=['🎮','🚲','🧸','🏖️','✈️','🎢','👟','📱','🎧','🎨','🏕️','🍦'];
+
+/* ================= state ================= */
+const KEY='pocketpals.v1';
+const emptyState=()=>({v:1,updated:0,pin:'',settings:{approveDaily:false},kids:[],daily:[],log:{},jobs:[],goals:[],ledger:[]});
+let S=(()=>{try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.kids)return o}}catch(e){}return emptyState()})();
+const ui={who:null,fromParent:false,ptab:'home',ktab:'me',moneyKid:null};
+let syncState='local';
+
+function persist(){
+  S.updated=Date.now();
+  const keys=Object.keys(S.log).sort();while(keys.length>90)delete S.log[keys.shift()];
+  try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+  syncPush();
+}
+
+/* ---- family sync via Netlify Function (optional; falls back to this device only) ---- */
+const CODE_KEY='pocketpals.code',API='/.netlify/functions/sync';
+let famCode=(()=>{try{return localStorage.getItem(CODE_KEY)||''}catch(e){return''}})();
+const newCode=()=>Array.from({length:12},()=>'abcdefghjkmnpqrstuvwxyz23456789'[Math.random()*31|0]).join('');
+const cleanCode=c=>String(c||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+function setCode(c){famCode=c;try{localStorage.setItem(CODE_KEY,c)}catch(e){}}
+let pushTimer=null,lastPushed=0,pulling=false;
+async function syncPull(){
+  if(!famCode||pulling)return;pulling=true;
+  try{
+    const r=await fetch(API+'?code='+encodeURIComponent(famCode),{cache:'no-store'});
+    if(!r.ok)throw new Error('x');
+    const d=await r.json();syncState='synced';
+    if(d&&d.json){
+      let o;try{o=JSON.parse(d.json)}catch(e){o=null}
+      if(o&&o.kids){
+        if(o.updated>S.updated){
+          S=o;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+          if(ui.who&&ui.who!=='parent'&&!kidById(ui.who))ui.who=null;
+          if(!$('#sheet').innerHTML)render();
+        }else if(o.updated<S.updated)syncPush(true);
+      }
+    }else if(S.kids.length)syncPush(true);
+  }catch(e){syncState='offline'}
+  pulling=false;
+}
+function syncPush(now){
+  if(!famCode)return;
+  clearTimeout(pushTimer);
+  pushTimer=setTimeout(async()=>{
+    try{
+      lastPushed=S.updated;
+      const r=await fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:famCode,json:JSON.stringify(S),updated:S.updated})});
+      syncState=r.ok?'synced':'offline';
+    }catch(e){syncState='offline'}
+  },now?0:500);
+}
+function initSync(){
+  syncPull();
+  setInterval(()=>{if(!document.hidden&&!$('#sheet').innerHTML)syncPull()},8000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncPull()});
+}
+
+/* ================= selectors ================= */
+const kidById=id=>S.kids.find(k=>k.id===id);
+const balance=id=>S.ledger.reduce((a,e)=>e.kidId===id?a+(e.amount||0):a,0);
+const screenMins=id=>S.ledger.reduce((a,e)=>e.kidId===id?a+(e.mins||0):a,0);
+const goalsOf=id=>S.goals.filter(g=>g.kidId===id);
+function activeGoal(id){const k=kidById(id);return S.goals.find(g=>g.id===k.goalId&&!g.doneOn&&g.kidId===id)||goalsOf(id).find(g=>!g.doneOn)||null}
+const dailiesFor=id=>S.daily.filter(d=>!d.kids||!d.kids.length||d.kids.includes(id));
+const dstat=(id,j,key=today())=>((S.log[key]||{})[id]||{})[j];
+const isDone=(st)=>st==='ok'||(st==='done'&&!S.settings.approveDaily);
+function dcounts(id,key=today()){const l=dailiesFor(id);let ok=0,wait=0;l.forEach(j=>{const s=dstat(id,j.id,key);if(isDone(s))ok++;else if(s==='done')wait++});return{total:l.length,ok,wait}}
+const unlocked=id=>{const c=dcounts(id);return c.total===0||c.ok===c.total};
+function streak(id){
+  const list=dailiesFor(id);if(!list.length)return 0;
+  const okDay=k=>list.every(j=>isDone(dstat(id,j.id,k)));
+  let n=0;const d=new Date();
+  if(okDay(dkey(d)))n++;
+  d.setDate(d.getDate()-1);
+  while(n<400&&okDay(dkey(d))){n++;d.setDate(d.getDate()-1)}
+  return n;
+}
+function jstatus(j){
+  if(j.status==='approved'){
+    if(j.repeat==='daily'&&j.approvedOn!==today())return'open';
+    if(j.repeat==='weekly'&&weekKey(parseKey(j.approvedOn))!==weekKey())return'open';
+  }
+  return j.status;
+}
+const repLabel=r=>r==='daily'?'🔁 Daily':r==='weekly'?'🔁 Weekly':'☝️ Once';
+function pendingList(){
+  const out=[];
+  S.jobs.forEach(j=>{if(j.status==='pending'&&kidById(j.kidId))out.push({t:'job',j,k:kidById(j.kidId)})});
+  if(S.settings.approveDaily){
+    S.kids.forEach(k=>dailiesFor(k.id).forEach(d=>{if(dstat(k.id,d.id)==='done')out.push({t:'daily',d,k})}));
+  }
+  return out;
+}
+
+/* ================= ledger ================= */
+function addEntry(e){
+  S.ledger.push(Object.assign({id:uid(),ts:Date.now(),amount:0,mins:0},e));
+  checkGoal(e.kidId,(e.amount||0)>0);
+}
+function checkGoal(kidId,celebrate){
+  const g=activeGoal(kidId);if(!g)return;
+  const reached=balance(kidId)>=g.target;
+  if(reached&&!g.hit){g.hit=true;if(celebrate){confetti(160);toast('🎉 '+kidById(kidId).name+' has enough for '+g.title+'!')}}
+  if(!reached)g.hit=false;
+}
+
+/* ================= UI atoms ================= */
+const field=(label,inner)=>`<label class="fld"><span>${label}</span>${inner}</label>`;
+function chips(name,opts,sel,multi,extra=''){
+  return`<div class="chips" data-group="${name}" ${multi?'data-multi="1"':''} ${extra}>`+opts.map(o=>{
+    const on=multi?(sel||[]).includes(o.v):sel===o.v;
+    return`<button type="button" class="chip ${on?'on':''}" data-chip="${esc(o.v)}">${o.l}</button>`}).join('')+`</div>`;
+}
+function getChip(name,multi){
+  const els=document.querySelectorAll(`[data-group="${name}"] .chip.on`);
+  return multi?[...els].map(e=>e.dataset.chip):(els[0]?els[0].dataset.chip:'');
+}
+const val=n=>{const el=document.querySelector(`#sheet [name="${n}"]`)||document.querySelector(`[name="${n}"]`);return el?el.value.trim():''};
+const emptyBox=(e,t)=>`<div class="empty"><span class="e">${e}</span>${t}</div>`;
+
+function openSheet(title,body){
+  $('#sheet').innerHTML=`<div class="backdrop" data-act="closeSheet"></div><div class="sheet" role="dialog" aria-label="${esc(title)}"><div class="grab"></div><h2>${title}</h2>${body}</div>`;
+  document.body.classList.add('noscroll');
+}
+function closeSheet(){$('#sheet').innerHTML='';document.body.classList.remove('noscroll')}
+function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2700)}
+function confirmSheet(title,msg,label,fn,cls='danger'){
+  confirmFn=fn;
+  openSheet(title,`<p style="font-weight:500;margin:0 0 6px">${msg}</p><button class="btn ${cls} block" data-act="confirmYes">${label}</button><button class="btn ghost block" data-act="closeSheet">Cancel</button>`);
+}
+let confirmFn=null;
+
+/* confetti */
+function confetti(n=100){
+  const c=$('#fx'),dpr=window.devicePixelRatio||1;
+  c.width=innerWidth*dpr;c.height=innerHeight*dpr;
+  const x=c.getContext('2d');x.scale(dpr,dpr);
+  const cols=['#ff5fa2','#ffd23f','#2ec4b6','#7c4dff','#ff8c42','#4cc9f0','#4cd964'];
+  const ps=Array.from({length:n},()=>({x:innerWidth/2+(Math.random()-.5)*80,y:innerHeight*.35,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,s:6+Math.random()*7,c:cols[Math.random()*cols.length|0],r:Math.random()*6,vr:(Math.random()-.5)*.4}));
+  let f=0;
+  (function tick(){
+    x.clearRect(0,0,innerWidth,innerHeight);
+    ps.forEach(p=>{p.vy+=.4;p.x+=p.vx;p.y+=p.vy;p.vx*=.99;p.r+=p.vr;x.save();x.translate(p.x,p.y);x.rotate(p.r);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/3,p.s,p.s*.6);x.restore()});
+    if(++f<110)requestAnimationFrame(tick);else x.clearRect(0,0,innerWidth,innerHeight);
+  })();
+}
+
+function jarSvg(pct,color){
+  const top=62,bottom=216;
+  const p=Math.max(.07,Math.min(1,pct));
+  const lv=Math.round(bottom-(bottom-top)*p);
+  const wavePath='M0 8 q25 -12 50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 t50 0 V200 H0Z';
+  return`<svg viewBox="0 0 200 240" class="jar" aria-hidden="true">
+  <defs><clipPath id="jc"><path d="M52 62 Q52 54 62 54 H138 Q148 54 148 62 V194 Q148 224 118 224 H82 Q52 224 52 194 Z"/></clipPath></defs>
+  <path d="M52 62 Q52 54 62 54 H138 Q148 54 148 62 V194 Q148 224 118 224 H82 Q52 224 52 194 Z" fill="#fff" opacity=".75"/>
+  <g clip-path="url(#jc)">
+    <g transform="translate(30 ${lv-8})"><g class="wave"><path d="${wavePath}" fill="${color}"/></g></g>
+    <circle class="bub" cx="80" cy="205" r="5" fill="#fff" opacity=".7"/><circle class="bub" cx="115" cy="210" r="4" fill="#fff" opacity=".7"/><circle class="bub" cx="98" cy="208" r="6" fill="#fff" opacity=".7"/>
+    <path d="M62 70 V180" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+  </g>
+  <path d="M52 62 Q52 54 62 54 H138 Q148 54 148 62 V194 Q148 224 118 224 H82 Q52 224 52 194 Z" fill="none" stroke="#2b2350" stroke-width="5"/>
+  <rect x="62" y="34" width="76" height="22" rx="9" fill="#ffd23f" stroke="#2b2350" stroke-width="5"/>
+  <text class="coinf" x="100" y="26" text-anchor="middle" font-size="30">🪙</text>
+  <text x="100" y="${Math.min(190,Math.max(108,lv+34))}" text-anchor="middle" font-size="26" font-weight="700" fill="#2b2350" font-family="Fredoka,system-ui">${Math.round(Math.min(1,pct)*100)}%</text>
+  </svg>`;
+}
+
+/* ================= views ================= */
+function render(){
+  const app=$('#app');
+  const old=$('.scroll');const keyNow=ui.who+'|'+ui.ptab+'|'+ui.ktab+'|'+ui.moneyKid;
+  const top=old&&render.last===keyNow?old.scrollTop:0;
+  let html;
+  if(!S.kids.length)html=viewWelcome();
+  else if(ui.who===null)html=viewPicker();
+  else if(ui.who==='parent')html=viewParent();
+  else if(kidById(ui.who))html=viewKid(kidById(ui.who));
+  else{ui.who=null;html=viewPicker()}
+  app.innerHTML=html;
+  render.last=keyNow;
+  const sc=$('.scroll');if(sc&&top)sc.scrollTop=top;
+}
+
+function kidRow(i){
+  return`<div class="krow"><input name="kname" placeholder="Child's name" maxlength="16" autocomplete="off"><div class="chips" data-group="av${i}">${AV.slice(0,8).map((a,j)=>`<button type="button" class="chip ${j===i%8?'on':''}" data-chip="${a}">${a}</button>`).join('')}</div></div>`;
+}
+function viewWelcome(){
+  return`<div class="scroll pt welcome"><div class="logo">🐷</div><h1>Pocket Pals</h1><p class="tag">Jobs, savings &amp; screen time for the whole family!</p>
+  <div class="card"><h3>👑 Parent PIN</h3><p class="hint" style="margin:0 0 10px">4 digits. Keeps the parent area locked from the kids.</p><input id="spin" class="pininput" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off"></div>
+  <div class="card"><h3>🌟 Who's earning?</h3><div id="krows">${kidRow(0)}</div><button class="btn ghost sm" data-act="addRow">+ Add another kid</button></div>
+  <div id="werr" class="err"></div>
+  <button class="btn go block big" data-act="finishSetup">Let's go! 🚀</button>
+  <button class="btn ghost block" data-act="demo">✨ Try a demo family first</button>
+  <button class="btn ghost block" data-act="joinCode">📲 My family is already set up on another phone</button></div>`;
+}
+function viewPicker(){
+  return`<div class="scroll pt pick"><div class="logo">🐷</div><h1>Pocket Pals</h1><p class="tag">Who's here?</p>
+  <div class="tiles">${S.kids.map(k=>`<button class="tile" style="--kc:${k.color}" data-act="pickKid" data-id="${k.id}"><div class="av">${k.avatar}</div>${esc(k.name)}</button>`).join('')}
+  <button class="tile parent" data-act="pickParent"><div class="av">👑</div>Parent</button></div></div>`;
+}
+function tabbar(tabs,cur,act,dots={}){
+  return`<nav class="tabbar">${tabs.map(t=>`<button class="tab ${t.id===cur?'on':''} ${dots[t.id]?'dot':''}" data-act="${act}" data-t="${t.id}"><span>${t.e}</span>${t.l}</button>`).join('')}</nav>`;
+}
+
+/* ---------- kid ---------- */
+function viewKid(k){
+  const h=new Date().getHours();
+  const greet=h<12?'Good morning! ☀️':h<18?'Good afternoon! 🌤️':'Good evening! 🌙';
+  const st=streak(k.id);
+  const head=`<header class="khead" style="--kc:${k.color}">${ui.fromParent?`<button class="hbtn" data-act="toParent">← Family HQ</button>`:`<button class="hbtn" data-act="switchUser">🔄 Switch</button>`}<div class="flame ${st?'':'off'}" title="Days in a row">🔥 ${st}</div><div class="kme"><div class="bigav">${k.avatar}</div><div><div class="hi">Hi ${esc(k.name)}!</div><div class="sub">${greet}</div></div></div></header>`;
+  let body='';
+  if(ui.ktab==='me')body=kidMe(k);
+  else if(ui.ktab==='jobs')body=kidJobs(k);
+  else if(ui.ktab==='goals')body=kidGoals(k);
+  else body=kidHistory(k);
+  const c=dcounts(k.id);
+  const tabs=[{id:'me',e:'🏠',l:'Me'},{id:'jobs',e:'⭐',l:'Jobs'},{id:'goals',e:'🎯',l:'Goals'},{id:'hist',e:'📒',l:'History'}];
+  return head+`<div class="scroll" style="--kc:${k.color}">${body}</div>`+tabbar(tabs,ui.ktab,'ktab',{jobs:c.total>0&&c.ok<c.total});
+}
+function kidMe(k){
+  const bal=balance(k.id),g=activeGoal(k.id),mins=screenMins(k.id),c=dcounts(k.id);
+  const pend=S.jobs.filter(j=>j.kidId===k.id&&j.status==='pending').length+dailiesFor(k.id).filter(d=>dstat(k.id,d.id)==='done'&&S.settings.approveDaily).length;
+  let goal;
+  if(g){
+    const pct=Math.min(100,Math.round(bal/g.target*100));const rem=g.target-bal;
+    goal=`<div class="goalrow"><span class="gemo">${g.emoji}</span><div><b>${esc(g.title)}</b><span class="sub">${g.kind==='holiday'?'🏖️ Holiday spending money':'🛍️ Saving to buy'}</span></div><span class="pill money">${money(g.target)}</span></div>
+    <div class="bar" style="--c:${k.color}"><i style="width:${pct}%"></i></div>
+    <div class="gtxt">${rem>0?`${money(rem)} to go — you can do it! 💪`:`🎉 You've got enough! Show a parent!`}</div>`;
+  }else goal=`<p class="hint" style="margin:0 0 8px">What are you saving for?</p><button class="btn pink block" data-act="newGoal">🎯 Pick something to save for</button>`;
+  const pct=g?bal/g.target:Math.min(.6,bal/5000);
+  return`<div class="card jarcard"><div class="jarwrap">${jarSvg(pct,k.color)}</div><div class="balance">${money(bal)}</div><div class="balsub">in your savings jar</div>${goal}</div>
+  <div class="stats">
+   <div class="card stat"><div class="ico">📺</div><div class="val">${fmtMins(mins)}</div><div class="sub">screen time bank</div></div>
+   <div class="card stat clickable" data-act="ktabTo" data-t="jobs"><div class="ico">${c.total&&c.ok<c.total?'☀️':'✅'}</div><div class="val">${c.total?c.ok+'/'+c.total:'—'}</div><div class="sub">${c.total?(c.ok<c.total?'daily quests done':'quests all done!'):'no daily quests'}</div></div>
+  </div>
+  ${pend?`<div class="card" style="background:#fff3c4"><b>⏳ ${pend} job${pend>1?'s':''} waiting for a parent to check</b></div>`:''}
+  ${!unlocked(k.id)?`<button class="btn purple block big" data-act="ktabTo" data-t="jobs">Do your daily quests ☀️</button>`:`<button class="btn go block big" data-act="ktabTo" data-t="jobs">See paid jobs 💰</button>`}`;
+}
+function kidJobs(k){
+  const c=dcounts(k.id),dl=dailiesFor(k.id),open=unlocked(k.id);
+  const pct=c.total?Math.round(c.ok/c.total*100):100;
+  const dq=dl.length?dl.map(d=>{const s=dstat(k.id,d.id);const cls=isDone(s)?'ok':s==='done'?'wait':'';
+    return`<div class="q ${cls}" data-act="toggleDaily" data-id="${d.id}"><span class="chk"></span><span class="qe">${d.emoji}</span><span class="qt">${esc(d.title)}</span></div>`}).join(''):emptyBox('🌈','No daily quests today!');
+  const lockMsg=c.total?(c.wait&&c.ok+c.wait===c.total?`<div class="lockbanner"><span class="big">⏳</span><span>Waiting for a parent to check your quests…</span></div>`:`<div class="lockbanner"><span class="big">🔒</span><span>Finish ${c.total-c.ok} more daily quest${c.total-c.ok>1?'s':''} to unlock paid jobs!</span></div>`):'';
+  const jobs=S.jobs.filter(j=>j.kidId===k.id).map(j=>({j,s:jstatus(j)})).filter(x=>x.s!=='approved'||x.j.repeat!=='once'||(Date.now()-parseKey(x.j.approvedOn))<4*864e5||x.j.approvedOn===today());
+  const order={open:0,pending:1,approved:2};jobs.sort((a,b)=>order[a.s]-order[b.s]);
+  const jl=jobs.length?jobs.map(({j,s})=>{
+    const act=s==='open'?`<button class="btn go sm" data-act="claimJob" data-id="${j.id}">I did it!</button>`:s==='pending'?`<span class="pill warn">⏳ Checking</span>`:`<span class="pill money">✅ Done</span>`;
+    return`<div class="job ${s==='approved'?'done':''}"><span class="qe">${j.emoji}</span><div class="jm"><div class="jt">${esc(j.title)}</div><div class="pills">${j.pay?`<span class="pill money">💰 ${money(j.pay)}</span>`:''}${j.mins?`<span class="pill time">📺 ${fmtMins(j.mins)}</span>`:''}<span class="pill">${repLabel(j.repeat)}</span></div></div>${act}</div>`}).join(''):emptyBox('🪄','No paid jobs yet. Ask a parent to add some!');
+  return`<div class="card"><h3>☀️ Daily Quests <span class="pill ${c.ok===c.total?'money':''}" style="float:right">${c.ok}/${c.total}</span></h3><div class="bar" style="--c:var(--yel);margin-bottom:6px"><i style="width:${pct}%"></i></div>${dq}</div>
+  <div class="sec">💰 Paid jobs</div>
+  ${c.total&&!open?lockMsg:(c.total?`<div class="unlockbanner"><span class="big">🔓</span><span>Quests done — paid jobs unlocked!</span></div>`:'')}
+  <div class="card ${open?'':'locked'}">${jl}</div>`;
+}
+function kidGoals(k){
+  const bal=balance(k.id),gs=goalsOf(k.id),act=activeGoal(k.id);
+  const live=gs.filter(g=>!g.doneOn),done=gs.filter(g=>g.doneOn);
+  const list=live.length?live.map(g=>{const pct=Math.min(100,Math.round(bal/g.target*100));const isA=act&&act.id===g.id;
+    return`<div class="card" style="${isA?'background:#fff8d6':''}"><div class="goalrow"><span class="gemo">${g.emoji}</span><div><b>${esc(g.title)}</b><span class="sub">${g.kind==='holiday'?'🏖️ Holiday spending money':'🛍️ Saving to buy'}</span></div><span class="pill money">${money(g.target)}</span></div>
+    <div class="bar" style="--c:${k.color}"><i style="width:${pct}%"></i></div>
+    <div class="kc-row"><span class="pill">${pct}%</span>${isA?'<span class="pill warn">⭐ Saving now</span>':`<button class="btn sm go" data-act="setGoal" data-id="${g.id}">Save for this</button>`}<button class="btn sm ghost" style="margin-left:auto" data-act="editGoal" data-id="${g.id}">✏️ Edit</button></div></div>`}).join(''):emptyBox('🎯','No goals yet — pick something awesome to save for!');
+  return`${list}<button class="btn pink block big" data-act="newGoal">➕ New goal</button>
+  ${done.length?`<div class="sec" style="margin-top:22px">🏆 Trophy shelf</div><div class="card">${done.map(g=>`<div class="row" data-act="editGoal" data-id="${g.id}"><span class="remo">${g.emoji}</span><div class="rmain"><b>${esc(g.title)}</b><span class="sub">Got it ${fmtDate(g.doneOn)}</span></div><span class="pill money">${money(g.spent||g.target)}</span></div>`).join('')}</div>`:''}`;
+}
+function ledgerRows(id,parent){
+  const es=S.ledger.filter(e=>e.kidId===id).sort((a,b)=>b.ts-a.ts);
+  if(!es.length)return emptyBox('📒','Nothing here yet.');
+  const ico={earn:'⭐',deposit:'🎁',withdraw:'💸','screen-use':'📺','screen-add':'⏱️'};
+  return es.map(e=>`<div class="row" ${parent?`data-act="entry" data-id="${e.id}"`:''} style="${parent?'':'cursor:default'}"><span class="remo">${ico[e.type]||'•'}</span><div class="rmain"><b>${esc(e.note||({earn:'Job done',deposit:'Money in',withdraw:'Money out','screen-use':'Screen time used','screen-add':'Screen time added'}[e.type]))}</b><span class="sub">${fmtDate(e.ts)}</span></div><div style="text-align:right">${e.amount?`<div class="amt ${e.amount>0?'pos':'neg'}">${e.amount>0?'+':''}${money(e.amount)}</div>`:''}${e.mins?`<span class="pill time">${e.mins>0?'+':''}${fmtMins(e.mins)}</span>`:''}</div></div>`).join('');
+}
+function kidHistory(k){
+  return`<div class="card"><h3>📒 My money &amp; screen time</h3>${ledgerRows(k.id,false)}</div>`;
+}
+
+/* ---------- parent ---------- */
+function viewParent(){
+  const pend=pendingList().length;
+  const tabs=[{id:'home',e:'🏠',l:'HQ'},{id:'jobs',e:'🧹',l:'Jobs'},{id:'money',e:'💰',l:'Money'},{id:'set',e:'⚙️',l:'Settings'}];
+  const titles={home:'Family HQ',jobs:'Jobs',money:'Money & Time',set:'Settings'};
+  const body=ui.ptab==='home'?pHome():ui.ptab==='jobs'?pJobs():ui.ptab==='money'?pMoney():pSettings();
+  return`<header class="phead"><h1>👑 ${titles[ui.ptab]}</h1><button class="hbtn" data-act="lock">🔒 Lock</button></header><div class="scroll">${body}</div>`+tabbar(tabs,ui.ptab,'ptab',{home:pend>0});
+}
+function pHome(){
+  const pl=pendingList();
+  const ap=pl.length?pl.map(p=>p.t==='job'?`<div class="approve"><span class="remo">${p.j.emoji}</span><div class="rmain"><b>${esc(p.k.name)}: ${esc(p.j.title)}</b><div class="pills" style="display:flex;gap:6px;margin-top:4px">${p.j.pay?`<span class="pill money">${money(p.j.pay)}</span>`:''}${p.j.mins?`<span class="pill time">${fmtMins(p.j.mins)}</span>`:''}</div></div><button class="btn sm go" data-act="approveJob" data-id="${p.j.id}">✓</button><button class="btn sm ghost" data-act="redoJob" data-id="${p.j.id}">↩</button></div>`
+    :`<div class="approve"><span class="remo">${p.d.emoji}</span><div class="rmain"><b>${esc(p.k.name)}: ${esc(p.d.title)}</b><span class="sub">Daily quest</span></div><button class="btn sm go" data-act="approveDaily" data-id="${p.d.id}" data-kid="${p.k.id}">✓</button><button class="btn sm ghost" data-act="redoDaily" data-id="${p.d.id}" data-kid="${p.k.id}">↩</button></div>`).join('')
+    :emptyBox('🎉','All caught up — nothing to approve!');
+  const kids=S.kids.map(k=>{
+    const g=activeGoal(k.id),bal=balance(k.id),c=dcounts(k.id),st=streak(k.id);
+    const gp=g?Math.min(100,Math.round(bal/g.target*100)):0;
+    return`<div class="card kidcard" data-act="viewKid" data-id="${k.id}" style="--kc:${k.color}"><div class="kc-top"><div class="av">${k.avatar}</div><div><b>${esc(k.name)}</b><span class="sub">☀️ ${c.ok}/${c.total} quests${st?' · 🔥 '+st:''}</span></div><div class="kbal">${money(bal)}</div></div>
+    ${g?`<div class="goalrow" style="margin:12px 0 6px"><span class="gemo" style="font-size:26px">${g.emoji}</span><div><b style="font-size:16px">${esc(g.title)}</b></div><span class="pill">${gp}% of ${money(g.target)}</span></div><div class="bar" style="--c:${k.color}"><i style="width:${gp}%"></i></div>`:`<p class="hint" style="margin:10px 0 0">No savings goal yet</p>`}
+    <div class="kc-row"><span class="pill time">📺 ${fmtMins(screenMins(k.id))}</span><button class="btn sm pink" style="margin-left:auto" data-act="quickMoney" data-id="${k.id}">💰 Money</button></div></div>`}).join('');
+  return`<div class="card"><h3>✋ Needs your OK ${pl.length?`<span class="pill warn">${pl.length}</span>`:''}</h3>${ap}</div><div class="sec">Kids</div>${kids}`;
+}
+function pJobs(){
+  const dl=S.daily.length?S.daily.map(d=>`<div class="row" data-act="editDaily" data-id="${d.id}"><span class="remo">${d.emoji}</span><div class="rmain"><b>${esc(d.title)}</b><span class="sub">${d.kids&&d.kids.length?d.kids.map(id=>kidById(id)).filter(Boolean).map(k=>esc(k.name)).join(', '):'Everyone'}</span></div><span class="chev">›</span></div>`).join(''):emptyBox('☀️','No daily quests. Add some the kids must do first!');
+  const groups=S.kids.map(k=>{
+    const js=S.jobs.filter(j=>j.kidId===k.id);
+    const rows=js.length?js.map(j=>{const s=jstatus(j);return`<div class="row" data-act="editJob" data-id="${j.id}"><span class="remo">${j.emoji}</span><div class="rmain"><b>${esc(j.title)}</b><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${j.pay?`<span class="pill money">${money(j.pay)}</span>`:''}${j.mins?`<span class="pill time">${fmtMins(j.mins)}</span>`:''}<span class="pill">${repLabel(j.repeat)}</span></div></div>${s==='pending'?`<span class="pill warn">⏳</span>`:s==='approved'?`<span class="pill money">✅</span>`:''}<span class="chev">›</span></div>`}).join(''):`<p class="hint" style="margin:4px">No jobs yet</p>`;
+    return`<div class="card"><h3>${k.avatar} ${esc(k.name)}'s paid jobs</h3>${rows}</div>`}).join('');
+  return`<div class="card"><h3>☀️ Daily quests</h3><p class="hint" style="margin:0 0 6px">Must be done each day before paid jobs unlock.</p>${dl}<button class="btn sm purple block" data-act="newDaily">+ Daily quest</button></div>
+  ${groups}<button class="btn pink block big" data-act="newJob">+ New paid job</button>`;
+}
+function pMoney(){
+  if(!ui.moneyKid||!kidById(ui.moneyKid))ui.moneyKid=S.kids[0].id;
+  const k=kidById(ui.moneyKid),g=activeGoal(k.id),bal=balance(k.id);
+  return`<div class="kselect">${S.kids.map(x=>`<button class="chip ${x.id===k.id?'on':''}" data-act="moneyKid" data-id="${x.id}">${x.avatar} ${esc(x.name)}</button>`).join('')}</div>
+  <div class="card walletbig"><div class="balance">${money(bal)}</div><div class="balsub">${g?`Saving for ${g.emoji} ${esc(g.title)} (${money(g.target)})`:'No goal set'}</div><span class="pill time">📺 ${fmtMins(screenMins(k.id))} screen time</span>
+  <div class="acts"><button class="btn pink" data-act="withdraw" data-id="${k.id}">💸 Take money out</button><button class="btn go" data-act="deposit" data-id="${k.id}">➕ Add money</button><button class="btn purple" data-act="screenUse" data-id="${k.id}">📺 Use screen time</button><button class="btn" data-act="screenAdd" data-id="${k.id}">⏱️ Add screen time</button></div></div>
+  <div class="card"><h3>📒 History</h3>${ledgerRows(k.id,true)}</div>`;
+}
+function pSettings(){
+  return`<div class="card"><div class="toggle"><div style="flex:1"><b>Check daily quests</b><div class="hint">Kids tick a quest, then you approve it before paid jobs unlock.</div></div><button class="sw-btn ${S.settings.approveDaily?'on':''}" data-act="toggleApprove" aria-label="Toggle"></button></div></div>
+  <div class="card"><h3>👧 Kids</h3>${S.kids.map(k=>`<div class="row" data-act="editKid" data-id="${k.id}"><span class="remo">${k.avatar}</span><div class="rmain"><b>${esc(k.name)}</b></div><span class="chev">›</span></div>`).join('')}<button class="btn sm purple block" data-act="newKid">+ Add a kid</button></div>
+  <div class="card"><h3>🔐 Parent PIN</h3><button class="btn ghost block" data-act="changePin" style="margin-top:0">Change PIN</button></div>
+  <div class="card"><h3>☁️ Share between phones</h3><p class="hint" style="margin:0 0 8px">On each other phone, open this site and choose <b>"My family is already set up on another phone"</b>, then enter this code. Keep it private.</p><div class="pill warn" style="font-size:20px;letter-spacing:2px;margin-bottom:8px">${famCode?esc(famCode):'—'}</div><p class="hint" style="margin:0 0 8px">${syncState==='synced'?'✅ Syncing — changes show up on every phone within a few seconds.':'📱 Not syncing right now — changes are saved on this phone and will sync when the connection is back.'}</p><button class="btn ghost sm" data-act="joinCode">Use a different code</button></div>
+  <div class="card"><h3>📲 On your iPhone</h3><p class="hint" style="margin:0">Tap the Share button in Safari, then <b>Add to Home Screen</b> to open Pocket Pals like an app.</p></div>
+  <button class="btn danger block" data-act="resetAll">Erase everything</button>`;
+}
+
+/* ================= sheets ================= */
+function sheetPad(){
+  padBuf='';
+  openSheet('👑 Parent PIN',`<div class="dots" id="dots"><i></i><i></i><i></i><i></i></div><div class="pad">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>k===''?'<span></span>':`<button class="key" data-act="${k==='⌫'?'padDel':'padKey'}" data-k="${k}" aria-label="${k}">${k}</button>`).join('')}</div><div class="err" id="perr" style="text-align:center"></div>`);
+}
+let padBuf='';
+function padUpdate(){document.querySelectorAll('#dots i').forEach((d,i)=>d.classList.toggle('on',i<padBuf.length))}
+
+function sheetGoal(kidId,g){
+  const kind=g?g.kind:'thing';
+  openSheet(g?'✏️ Edit goal':'🎯 New goal',
+  `${field('What are you saving for?',`<input name="title" maxlength="30" placeholder="e.g. Lego set, Gold Coast trip" value="${esc(g?g.title:'')}" autocomplete="off">`)}
+   ${field('Pick a picture',chips('gemo',GOALEMO.map(e=>({v:e,l:e})),g?g.emoji:'🎮'))}
+   ${field('What kind of goal?',chips('kind',[{v:'thing',l:'🛍️ Buy something'},{v:'holiday',l:'🏖️ Holiday spending money'}],kind))}
+   ${field('How much do you need? ($)',`<input name="target" inputmode="decimal" placeholder="0.00" value="${g?(g.target/100):''}" autocomplete="off">`)}
+   <div class="err" id="err"></div>
+   <button class="btn go block" data-act="saveGoal" data-kid="${kidId}" data-id="${g?g.id:''}">Save goal</button>
+   ${g?`<button class="btn danger block" data-act="delGoal" data-id="${g.id}">Delete goal</button>`:''}`);
+}
+function sheetDaily(d){
+  const sel=d&&d.kids?d.kids:[];
+  openSheet(d?'✏️ Edit daily quest':'☀️ New daily quest',
+  `${field('What needs doing?',`<input name="title" maxlength="30" placeholder="e.g. Make your bed" value="${esc(d?d.title:'')}" autocomplete="off">`)}
+   ${field('Picture',chips('emo',JOBEMO.map(e=>({v:e,l:e})),d?d.emoji:'🛏️'))}
+   ${field('Who? (none selected = everyone)',chips('kids',S.kids.map(k=>({v:k.id,l:k.avatar+' '+esc(k.name)})),sel,true))}
+   <div class="err" id="err"></div>
+   <button class="btn go block" data-act="saveDaily" data-id="${d?d.id:''}">Save</button>
+   ${d?`<button class="btn danger block" data-act="delDaily" data-id="${d.id}">Delete</button>`:''}`);
+}
+function sheetJob(j,preKid){
+  openSheet(j?'✏️ Edit job':'🧹 New paid job',
+  `${field('What is the job?',`<input name="title" maxlength="34" placeholder="e.g. Wash the car" value="${esc(j?j.title:'')}" autocomplete="off">`)}
+   ${field('Picture',chips('emo',JOBEMO.map(e=>({v:e,l:e})),j?j.emoji:'🧹'))}
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+   ${field('Pay ($)',`<input name="pay" inputmode="decimal" placeholder="0.00" value="${j&&j.pay?j.pay/100:''}" autocomplete="off">`)}
+   ${field('Screen time (min)',`<input name="mins" inputmode="numeric" placeholder="0" value="${j&&j.mins?j.mins:''}" autocomplete="off">`)}</div>
+   ${field('How often?',chips('rep',[{v:'once',l:'☝️ Once'},{v:'daily',l:'🔁 Daily'},{v:'weekly',l:'🔁 Weekly'}],j?j.repeat:'once'))}
+   ${field(j?'For':'For (pick one or more)',chips('kids',S.kids.map(k=>({v:k.id,l:k.avatar+' '+esc(k.name)})),j?(j.kidId?[j.kidId]:[]):(preKid?[preKid]:[S.kids[0].id]),!j))}
+   <div class="err" id="err"></div>
+   <button class="btn go block" data-act="saveJob" data-id="${j?j.id:''}">Save job</button>
+   ${j?`<button class="btn danger block" data-act="delJob" data-id="${j.id}">Delete job</button>`:''}`);
+}
+function sheetWithdraw(kidId){
+  const k=kidById(kidId),gs=goalsOf(kidId).filter(g=>!g.doneOn);
+  openSheet('💸 Take money out — '+esc(k.name),
+  `<p class="hint" style="margin:0 0 12px">In the account: <b>${money(balance(kidId))}</b></p>
+   ${field('How much? ($)',`<input name="amt" inputmode="decimal" placeholder="0.00" autocomplete="off">`)}
+   ${field('What happened?',chips('why',[{v:'Cash handed over',l:'💵 Cash handed over'},{v:'Paid for something',l:'🛍️ Paid for something'},{v:'Other',l:'✏️ Other'}],'Cash handed over'))}
+   ${field('Note (optional)',`<input name="note" maxlength="40" placeholder="e.g. Lego set" autocomplete="off">`)}
+   ${gs.length?field('Was this for a goal?',chips('goal',[{v:'',l:'No'}].concat(gs.map(g=>({v:g.id,l:g.emoji+' '+esc(g.title)}))),'')):''}
+   <div class="err" id="err"></div>
+   <button class="btn pink block" data-act="doWithdraw" data-id="${kidId}">Take it out</button>`);
+}
+function sheetDeposit(kidId){
+  const k=kidById(kidId);
+  openSheet('➕ Add money — '+esc(k.name),
+  `${field('How much? ($)',`<input name="amt" inputmode="decimal" placeholder="0.00" autocomplete="off">`)}
+   ${field('Why?',chips('why',[{v:'Pocket money',l:'🪙 Pocket money'},{v:'Gift',l:'🎁 Gift'},{v:'Bonus',l:'🌟 Bonus'},{v:'Other',l:'✏️ Other'}],'Pocket money'))}
+   ${field('Note (optional)',`<input name="note" maxlength="40" placeholder="e.g. Birthday from Nan" autocomplete="off">`)}
+   <div class="err" id="err"></div>
+   <button class="btn go block" data-act="doDeposit" data-id="${kidId}">Add to account</button>`);
+}
+function sheetScreen(kidId,use){
+  const k=kidById(kidId);
+  openSheet((use?'📺 Use screen time — ':'⏱️ Add screen time — ')+esc(k.name),
+  `<p class="hint" style="margin:0 0 12px">Screen time bank: <b>${fmtMins(screenMins(kidId))}</b></p>
+   ${field('Minutes',`<input name="mins" inputmode="numeric" placeholder="0" autocomplete="off">`)}
+   ${chips('quick',[15,30,45,60,90].map(m=>({v:String(m),l:m+'m'})),'',false,'data-fill="mins"')}
+   <div style="height:14px"></div>
+   ${field('Note (optional)',`<input name="note" maxlength="40" placeholder="${use?'e.g. Fortnite after dinner':'e.g. Weekend treat'}" autocomplete="off">`)}
+   <div class="err" id="err"></div>
+   <button class="btn ${use?'purple':'go'} block" data-act="doScreen" data-id="${kidId}" data-use="${use?1:0}">${use?'Use it':'Add it'}</button>`);
+}
+function sheetKid(k){
+  openSheet(k?'✏️ Edit kid':'🌟 Add a kid',
+  `${field('Name',`<input name="name" maxlength="16" value="${esc(k?k.name:'')}" autocomplete="off">`)}
+   ${field('Avatar',chips('av',AV.map(a=>({v:a,l:a})),k?k.avatar:AV[S.kids.length%AV.length]))}
+   ${field('Colour',`<div class="chips" data-group="col">${COLORS.map(c=>`<button type="button" class="chip sw ${(k?k.color:COLORS[S.kids.length%COLORS.length])===c?'on':''}" data-chip="${c}" style="background:${c}" aria-label="colour"></button>`).join('')}</div>`)}
+   <div class="err" id="err"></div>
+   <button class="btn go block" data-act="saveKid" data-id="${k?k.id:''}">Save</button>
+   ${k?`<button class="btn danger block" data-act="delKid" data-id="${k.id}">Remove ${esc(k.name)}</button>`:''}`);
+}
+function sheetEntry(e){
+  const k=kidById(e.kidId);
+  openSheet('Entry details',`<p style="margin:0 0 6px;font-weight:600">${esc(e.note||e.type)}</p><p class="hint" style="margin:0 0 6px">${esc(k?k.name:'')} · ${fmtDate(e.ts)}</p><div style="display:flex;gap:6px;margin-bottom:8px">${e.amount?`<span class="pill ${e.amount>0?'money':'neg'}">${e.amount>0?'+':''}${money(e.amount)}</span>`:''}${e.mins?`<span class="pill time">${e.mins>0?'+':''}${fmtMins(e.mins)}</span>`:''}</div><p class="hint">Made a mistake? Deleting reverses this entry.</p><button class="btn danger block" data-act="delEntry" data-id="${e.id}">Delete entry</button><button class="btn ghost block" data-act="closeSheet">Close</button>`);
+}
+function sheetPin(){
+  openSheet('🔐 New parent PIN',`${field('4 digits',`<input name="pin" class="pininput" type="password" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">`)}<div class="err" id="err"></div><button class="btn go block" data-act="savePin">Save PIN</button>`);
+}
+function sheetCode(){
+  openSheet('📲 Family code',`<p class="hint" style="margin:0 0 12px">Enter the code from the parent's Settings screen on the first phone.</p>${field('Code',`<input name="code" maxlength="20" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="e.g. k7m2x9pq4wtd" autocomplete="off">`)}<div class="err" id="err"></div><button class="btn go block" data-act="saveCode">Connect</button>`);
+}
+const setErr=m=>{const e=$('#err');if(e)e.textContent=m};
+
+/* ================= demo data ================= */
+function loadDemo(){
+  const da=n=>Date.now()-n*864e5;
+  const mia={id:uid(),name:'Mia',avatar:'🦊',color:COLORS[1]},leo={id:uid(),name:'Leo',avatar:'🐲',color:COLORS[2]};
+  const d=[{id:uid(),title:'Make your bed',emoji:'🛏️',kids:[]},{id:uid(),title:'Brush teeth',emoji:'🪥',kids:[]},{id:uid(),title:'Tidy your room',emoji:'🧸',kids:[]},{id:uid(),title:'Feed the dog',emoji:'🐕',kids:[leo.id]}];
+  const mk=(kid,title,emoji,pay,mins,repeat,status)=>({id:uid(),kidId:kid.id,title,emoji,pay,mins,repeat,status:status||'open',createdOn:today()});
+  const g1={id:uid(),kidId:mia.id,title:'Nintendo game',emoji:'🎮',target:6000,kind:'thing'},g2={id:uid(),kidId:mia.id,title:'Beach holiday spending',emoji:'🏖️',target:15000,kind:'holiday'},g3={id:uid(),kidId:leo.id,title:'BMX bike',emoji:'🚲',target:18000,kind:'thing'};
+  mia.goalId=g1.id;leo.goalId=g3.id;
+  const L=(kid,n,type,amount,mins,note)=>({id:uid(),kidId:kid.id,ts:da(n),type,amount,mins,note});
+  const log={};
+  [1,2].forEach(n=>{log[dkey(new Date(Date.now()-n*864e5))]={[mia.id]:{[d[0].id]:'ok',[d[1].id]:'ok',[d[2].id]:'ok'}}});
+  log[today()]={[mia.id]:{[d[0].id]:'ok'}};
+  if(!famCode)setCode(newCode());
+  S={v:1,updated:0,pin:'1234',settings:{approveDaily:false},kids:[mia,leo],daily:d,log,
+   jobs:[mk(mia,'Wash the car','🚗',500,30,'once'),mk(mia,'Unload dishwasher','🍽️',200,15,'daily'),mk(mia,'Weed the garden','🌱',600,20,'weekly'),mk(leo,'Walk the dog','🐕',300,20,'daily'),mk(leo,'Take the bins out','🗑️',200,10,'weekly'),Object.assign(mk(leo,'Vacuum the lounge','🧹',400,25,'once','pending'),{doneOn:today()})],
+   goals:[g1,g2,g3],
+   ledger:[L(mia,9,'deposit',2000,0,'Birthday: Nan'),L(mia,7,'earn',500,30,'Wash the car'),L(mia,5,'earn',200,15,'Unload dishwasher'),L(mia,4,'earn',600,20,'Weed the garden'),L(mia,3,'withdraw',-600,0,'Cash handed over: ice cream trip'),L(mia,3,'screen-use',0,-45,'Movie night'),L(mia,2,'earn',200,15,'Unload dishwasher'),L(mia,1,'earn',300,0,'Pocket money bonus'),
+          L(leo,6,'earn',300,20,'Walk the dog'),L(leo,5,'earn',200,10,'Take the bins out'),L(leo,4,'deposit',1000,0,'Pocket money'),L(leo,2,'earn',300,20,'Walk the dog'),L(leo,2,'screen-use',0,-20,'Minecraft')]};
+  persist();
+}
+
+/* ================= actions ================= */
+const A={
+  closeSheet(){closeSheet()},
+  confirmYes(){const f=confirmFn;confirmFn=null;closeSheet();if(f)f()},
+  addRow(){const n=document.querySelectorAll('.krow').length;$('#krows').insertAdjacentHTML('beforeend',kidRow(n))},
+  finishSetup(){
+    const pin=$('#spin').value.trim();
+    const rows=[...document.querySelectorAll('.krow')];
+    const kids=rows.map((r,i)=>({id:uid(),name:$('input',r).value.trim(),avatar:getChip('av'+i)||AV[i%AV.length],color:COLORS[i%COLORS.length]})).filter(k=>k.name);
+    if(!/^\d{4}$/.test(pin))return $('#werr').textContent='Pick a 4-digit PIN for the parent area.';
+    if(!kids.length)return $('#werr').textContent='Add at least one kid.';
+    S=emptyState();S.pin=pin;S.kids=kids;if(!famCode)setCode(newCode());
+    S.daily=[{id:uid(),title:'Make your bed',emoji:'🛏️',kids:[]},{id:uid(),title:'Brush teeth',emoji:'🪥',kids:[]},{id:uid(),title:'Tidy your room',emoji:'🧸',kids:[]}];
+    persist();ui.who=null;render();toast('Welcome! Tap Parent to add jobs 👑');
+  },
+  demo(){loadDemo();ui.who=null;render();toast('Demo family loaded — PIN is 1234');},
+  pickKid(d){ui.who=d.id;ui.fromParent=false;ui.ktab='me';render();const k=kidById(d.id);if(k)checkGoal(k.id,false)},
+  pickParent(){sheetPad()},
+  padKey(d){if(padBuf.length>=4)return;padBuf+=d.k;padUpdate();
+    if(padBuf.length===4){
+      if(padBuf===S.pin){closeSheet();ui.who='parent';ui.fromParent=false;ui.ptab='home';render()}
+      else{const el=$('#dots');el.classList.add('shake');$('#perr').textContent='Oops, wrong PIN';setTimeout(()=>{padBuf='';padUpdate();el.classList.remove('shake');},450)}
+    }},
+  padDel(){padBuf=padBuf.slice(0,-1);padUpdate()},
+  switchUser(){ui.who=null;render()},
+  lock(){ui.who=null;ui.fromParent=false;render()},
+  toParent(){ui.who='parent';ui.fromParent=false;render()},
+  viewKid(d){ui.who=d.id;ui.fromParent=true;ui.ktab='me';render()},
+  ktab(d){ui.ktab=d.t;render()},ktabTo(d){ui.ktab=d.t;render()},
+  ptab(d){ui.ptab=d.t;render()},
+  toggleDaily(d){
+    const kid=ui.who,wasOpen=unlocked(kid);
+    const key=today();S.log[key]=S.log[key]||{};const l=S.log[key][kid]=S.log[key][kid]||{};
+    const cur=l[d.id];
+    if(cur==='ok'&&S.settings.approveDaily&&!ui.fromParent){toast('A parent has checked this one ✅');return}
+    if(cur)delete l[d.id];else l[d.id]=(S.settings.approveDaily&&!ui.fromParent)?'done':'ok';
+    persist();render();
+    if(!wasOpen&&unlocked(kid)){confetti(130);toast('🔓 Paid jobs unlocked!')}
+    else if(!cur&&S.settings.approveDaily&&!ui.fromParent)toast('Sent to a parent to check ⏳');
+    else if(!cur)toast('Nice one! ⭐');
+  },
+  claimJob(d){
+    const j=S.jobs.find(x=>x.id===d.id);if(!j||!unlocked(j.kidId))return;
+    j.status='pending';j.doneOn=today();persist();render();toast('Sent to a parent to check ⏳');
+  },
+  approveJob(d){
+    const j=S.jobs.find(x=>x.id===d.id);if(!j)return;
+    j.status='approved';j.approvedOn=today();
+    addEntry({kidId:j.kidId,type:'earn',amount:j.pay||0,mins:j.mins||0,note:j.title});
+    persist();render();confetti(70);toast('Approved! '+(j.pay?money(j.pay):'')+(j.mins?' +'+fmtMins(j.mins):'')+' added ⭐');
+  },
+  redoJob(d){const j=S.jobs.find(x=>x.id===d.id);if(!j)return;j.status='open';persist();render();toast('Sent back to try again')},
+  approveDaily(d){const key=today();((S.log[key]||{})[d.kid]||{})[d.id]='ok';persist();render();toast('Quest approved ✅')},
+  redoDaily(d){const key=today();delete ((S.log[key]||{})[d.kid]||{})[d.id];persist();render()},
+  /* goals */
+  newGoal(){sheetGoal(ui.who)},
+  editGoal(d){const g=S.goals.find(x=>x.id===d.id);if(g)sheetGoal(g.kidId,g)},
+  setGoal(d){const g=S.goals.find(x=>x.id===d.id);if(!g)return;kidById(g.kidId).goalId=g.id;checkGoal(g.kidId,true);persist();render()},
+  saveGoal(d){
+    const title=val('title'),target=parseMoney(val('target')),emoji=getChip('gemo')||'🎯',kind=getChip('kind')||'thing';
+    if(!title)return setErr('What are you saving for?');
+    if(target<=0)return setErr('How much does it cost?');
+    let g;
+    if(d.id){g=S.goals.find(x=>x.id===d.id);Object.assign(g,{title,target,emoji,kind});}
+    else{g={id:uid(),kidId:d.kid,title,target,emoji,kind};S.goals.push(g);if(!activeGoal(d.kid)||!goalsOf(d.kid).some(x=>!x.doneOn&&x.id!==g.id))kidById(d.kid).goalId=g.id}
+    g.hit=false;checkGoal(d.kid,true);persist();closeSheet();render();
+  },
+  delGoal(d){confirmSheet('Delete this goal?','The money stays in the account.','Delete',()=>{S.goals=S.goals.filter(g=>g.id!==d.id);persist();render()})},
+  /* parent: jobs */
+  newDaily(){sheetDaily()},editDaily(d){sheetDaily(S.daily.find(x=>x.id===d.id))},
+  saveDaily(d){
+    const title=val('title');if(!title)return setErr('Give the quest a name.');
+    const emoji=getChip('emo')||'⭐',kids=getChip('kids',true);
+    if(d.id){Object.assign(S.daily.find(x=>x.id===d.id),{title,emoji,kids})}else S.daily.push({id:uid(),title,emoji,kids});
+    persist();closeSheet();render();
+  },
+  delDaily(d){confirmSheet('Delete this quest?','It will disappear for everyone.','Delete',()=>{S.daily=S.daily.filter(x=>x.id!==d.id);persist();render()})},
+  newJob(){sheetJob(null,null)},editJob(d){const j=S.jobs.find(x=>x.id===d.id);const s=jstatus(j);
+    if(s==='pending'){openSheet('⏳ Waiting for approval',`<p style="font-weight:600;margin:0 0 10px">${j.emoji} ${esc(j.title)}</p><button class="btn go block" data-act="approveJobClose" data-id="${j.id}">✓ Approve &amp; pay</button><button class="btn ghost block" data-act="editJobForce" data-id="${j.id}">✏️ Edit job</button>`)}
+    else sheetJob(j)},
+  approveJobClose(d){closeSheet();A.approveJob(d)},
+  editJobForce(d){sheetJob(S.jobs.find(x=>x.id===d.id))},
+  saveJob(d){
+    const title=val('title'),emoji=getChip('emo')||'🧹',pay=parseMoney(val('pay')),mins=Math.max(0,parseInt(val('mins'))||0),repeat=getChip('rep')||'once';
+    const kids=d.id?[getChip('kids')]:getChip('kids',true);
+    if(!title)return setErr('Give the job a name.');
+    if(!kids.length||!kids[0])return setErr('Pick who it is for.');
+    if(!pay&&!mins)return setErr('Add some pay or screen time.');
+    if(d.id){Object.assign(S.jobs.find(x=>x.id===d.id),{title,emoji,pay,mins,repeat,kidId:kids[0]})}
+    else kids.forEach(kid=>S.jobs.push({id:uid(),kidId:kid,title,emoji,pay,mins,repeat,status:'open',createdOn:today()}));
+    persist();closeSheet();render();toast('Job saved ✅');
+  },
+  delJob(d){confirmSheet('Delete this job?','Money already paid stays in the history.','Delete',()=>{S.jobs=S.jobs.filter(x=>x.id!==d.id);persist();render()})},
+  /* money */
+  moneyKid(d){ui.moneyKid=d.id;render()},
+  quickMoney(d){ui.moneyKid=d.id;ui.ptab='money';render()},
+  withdraw(d){sheetWithdraw(d.id)},deposit(d){sheetDeposit(d.id)},screenUse(d){sheetScreen(d.id,true)},screenAdd(d){sheetScreen(d.id,false)},
+  doWithdraw(d){
+    const c=parseMoney(val('amt'));if(c<=0)return setErr('Enter how much.');
+    if(c>balance(d.id))return setErr('Only '+money(balance(d.id))+' in the account.');
+    const why=getChip('why')||'Money out',note=val('note'),gid=getChip('goal');
+    addEntry({kidId:d.id,type:'withdraw',amount:-c,note:why+(note?': '+note:'')});
+    if(gid){const g=S.goals.find(x=>x.id===gid);if(g){g.doneOn=Date.now();g.spent=c;g.hit=false;const k=kidById(d.id);if(k.goalId===g.id)k.goalId=null;confetti(150);toast('🏆 '+g.title+' goal complete!')}}
+    persist();closeSheet();render();if(!gid)toast(money(c)+' taken out 💸');
+  },
+  doDeposit(d){
+    const c=parseMoney(val('amt'));if(c<=0)return setErr('Enter how much.');
+    const why=getChip('why')||'Money in',note=val('note');
+    addEntry({kidId:d.id,type:'deposit',amount:c,note:why+(note?': '+note:'')});
+    persist();closeSheet();render();toast(money(c)+' added 🎁');
+  },
+  doScreen(d){
+    const m=parseInt(val('mins'))||0;if(m<=0)return setErr('Enter the minutes.');
+    const use=d.use==='1',note=val('note');
+    if(use&&m>screenMins(d.id))return setErr('Only '+fmtMins(screenMins(d.id))+' in the bank.');
+    addEntry({kidId:d.id,type:use?'screen-use':'screen-add',mins:use?-m:m,note:note||(use?'Screen time used':'Screen time added')});
+    persist();closeSheet();render();toast(use?'📺 '+fmtMins(m)+' used':'⏱️ '+fmtMins(m)+' added');
+  },
+  entry(d){const e=S.ledger.find(x=>x.id===d.id);if(e)sheetEntry(e)},
+  delEntry(d){S.ledger=S.ledger.filter(x=>x.id!==d.id);S.kids.forEach(k=>checkGoal(k.id,false));persist();closeSheet();render();toast('Entry deleted')},
+  /* settings */
+  toggleApprove(){S.settings.approveDaily=!S.settings.approveDaily;persist();render()},
+  changePin(){sheetPin()},
+  savePin(){const p=val('pin');if(!/^\d{4}$/.test(p))return setErr('PIN must be 4 digits.');S.pin=p;persist();closeSheet();toast('PIN changed 🔐')},
+  newKid(){sheetKid()},editKid(d){sheetKid(kidById(d.id))},
+  saveKid(d){
+    const name=val('name');if(!name)return setErr('Enter a name.');
+    const avatar=getChip('av')||AV[0],color=getChip('col')||COLORS[0];
+    if(d.id)Object.assign(kidById(d.id),{name,avatar,color});else S.kids.push({id:uid(),name,avatar,color});
+    persist();closeSheet();render();
+  },
+  delKid(d){const k=kidById(d.id);confirmSheet('Remove '+esc(k.name)+'?','All their jobs, goals and money history will be deleted.','Remove',()=>{
+    S.kids=S.kids.filter(x=>x.id!==d.id);S.jobs=S.jobs.filter(x=>x.kidId!==d.id);S.goals=S.goals.filter(x=>x.kidId!==d.id);S.ledger=S.ledger.filter(x=>x.kidId!==d.id);S.daily.forEach(x=>{x.kids=(x.kids||[]).filter(i=>i!==d.id)});
+    if(ui.moneyKid===d.id)ui.moneyKid=null;
+    if(!S.kids.length){ui.who=null}
+    persist();render()})},
+  joinCode(){sheetCode()},
+  async saveCode(){
+    const c=cleanCode(val('code'));if(c.length<8)return setErr('That code looks too short.');
+    setErr('Connecting…');
+    try{
+      const r=await fetch(API+'?code='+encodeURIComponent(c),{cache:'no-store'});
+      if(!r.ok)throw new Error('x');
+      const d=await r.json();
+      if(!d||!d.json){
+        if(S.kids.length){setCode(c);closeSheet();syncPush(true);render();toast('Connected ☁️');return}
+        return setErr('No family found with that code.');
+      }
+      const o=JSON.parse(d.json);setCode(c);S=o;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}
+      syncState='synced';ui.who=null;closeSheet();render();toast('Connected! ☁️');
+    }catch(e){setErr('Could not connect. Check the code and your internet.')}
+  },
+  resetAll(){confirmSheet('Erase everything?','This deletes all kids, jobs, goals and money records on every device. It cannot be undone.','Yes, erase it all',()=>{S=emptyState();ui.who=null;persist();render()})}
+};
+
+document.addEventListener('click',e=>{
+  const chip=e.target.closest('.chip');
+  if(chip&&chip.closest('.chips')){
+    const g=chip.closest('.chips');
+    if(g.dataset.multi)chip.classList.toggle('on');
+    else{g.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));chip.classList.add('on')}
+    if(g.dataset.fill){const inp=document.querySelector(`[name="${g.dataset.fill}"]`);if(inp)inp.value=chip.dataset.chip}
+    return;
+  }
+  const t=e.target.closest('[data-act]');if(!t)return;
+  const f=A[t.dataset.act];if(f)f(t.dataset,t);
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+render();
+initSync();
+</script>
+</body>
+</html>
