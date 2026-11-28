@@ -281,13 +281,19 @@ function jstatus(j){
   if(j.status==='approved'){
     if(j.repeat==='daily'&&j.approvedOn!==today())return'open';
     if(j.repeat==='weekly'&&weekKey(parseKey(j.approvedOn))!==weekKey())return'open';
+    if(j.repeat==='monthly'&&j.approvedOn.slice(0,7)!==today().slice(0,7))return'open';
   }
   return j.status;
 }
-const repLabel=r=>r==='daily'?'🔁 Daily':r==='weekly'?'🔁 Weekly':'☝️ Once';
+const repLabel=r=>r==='daily'?'🔁 Daily':r==='weekly'?'🔁 Weekly':r==='monthly'?'🗓️ Monthly':'☝️ Once';
+/* weekday rotation: Mon-Fri only, continues across weekends (Fri A -> Mon B) */
+function wdIndex(d=new Date()){const dow=(d.getDay()+6)%7;if(dow>4)return -1;const mon=new Date(d.getFullYear(),d.getMonth(),d.getDate()-dow);return Math.round((mon-new Date(2024,0,1))/(7*864e5))*5+dow}
+function assignee(j){const ks=(j.kids||[]).filter(kidById);const i=wdIndex();return(i<0||!ks.length)?null:ks[i%ks.length]}
+const isMine=(j,id)=>j.rotate?assignee(j)===id:j.kidId===id;
+const doneByOf=j=>j.doneBy||j.kidId;
 function pendingList(){
   const out=[];
-  S.jobs.forEach(j=>{if(j.status==='pending'&&kidById(j.kidId))out.push({t:'job',j,k:kidById(j.kidId)})});
+  S.jobs.forEach(j=>{if(j.status==='pending'&&kidById(doneByOf(j)))out.push({t:'job',j,k:kidById(doneByOf(j))})});
   if(S.settings.approveDaily){
     S.kids.forEach(k=>dailiesFor(k.id).forEach(d=>{if(dstat(k.id,d.id)==='done')out.push({t:'daily',d,k})}));
   }
@@ -421,7 +427,7 @@ function viewKid(k){
 }
 function kidMe(k){
   const bal=balance(k.id),g=activeGoal(k.id),mins=screenMins(k.id),c=dcounts(k.id);
-  const pend=S.jobs.filter(j=>j.kidId===k.id&&j.status==='pending').length+dailiesFor(k.id).filter(d=>dstat(k.id,d.id)==='done'&&S.settings.approveDaily).length;
+  const pend=S.jobs.filter(j=>doneByOf(j)===k.id&&j.status==='pending').length+dailiesFor(k.id).filter(d=>dstat(k.id,d.id)==='done'&&S.settings.approveDaily).length;
   let goal;
   if(g){
     const pct=Math.min(100,Math.round(bal/g.target*100));const rem=g.target-bal;
@@ -444,11 +450,11 @@ function kidJobs(k){
   const dq=dl.length?dl.map(d=>{const s=dstat(k.id,d.id);const cls=isDone(s)?'ok':s==='done'?'wait':'';
     return`<div class="q ${cls}" data-act="toggleDaily" data-id="${d.id}"><span class="chk"></span><span class="qe">${d.emoji}</span><span class="qt">${esc(d.title)}</span></div>`}).join(''):emptyBox('🌈','No daily quests today!');
   const lockMsg=c.total?(c.wait&&c.ok+c.wait===c.total?`<div class="lockbanner"><span class="big">⏳</span><span>Waiting for a parent to check your quests…</span></div>`:`<div class="lockbanner"><span class="big">🔒</span><span>Finish ${c.total-c.ok} more daily quest${c.total-c.ok>1?'s':''} to unlock paid jobs!</span></div>`):'';
-  const jobs=S.jobs.filter(j=>j.kidId===k.id).map(j=>({j,s:jstatus(j)})).filter(x=>x.s!=='approved'||x.j.repeat!=='once'||(Date.now()-parseKey(x.j.approvedOn))<4*864e5||x.j.approvedOn===today());
+  const jobs=S.jobs.filter(j=>isMine(j,k.id)||(j.rotate&&j.status==='pending'&&j.doneBy===k.id)).map(j=>({j,s:jstatus(j)})).filter(x=>x.s!=='approved'||x.j.repeat!=='once'||(Date.now()-parseKey(x.j.approvedOn))<4*864e5||x.j.approvedOn===today());
   const order={open:0,pending:1,approved:2};jobs.sort((a,b)=>order[a.s]-order[b.s]);
   const jl=jobs.length?jobs.map(({j,s})=>{
     const act=s==='open'?`<button class="btn go sm" data-act="claimJob" data-id="${j.id}">I did it!</button>`:s==='pending'?`<span class="pill warn">⏳ Checking</span>`:`<span class="pill money">✅ Done</span>`;
-    return`<div class="job ${s==='approved'?'done':''}"><span class="qe">${j.emoji}</span><div class="jm"><div class="jt">${esc(j.title)}</div><div class="pills">${j.pay?`<span class="pill money">💰 ${money(j.pay)}</span>`:''}${j.mins?`<span class="pill time">📺 ${fmtMins(j.mins)}</span>`:''}<span class="pill">${repLabel(j.repeat)}</span></div></div>${act}</div>`}).join(''):emptyBox('🪄','No paid jobs yet. Ask a parent to add some!');
+    return`<div class="job ${s==='approved'?'done':''}"><span class="qe">${j.emoji}</span><div class="jm"><div class="jt">${esc(j.title)}</div><div class="pills">${j.pay?`<span class="pill money">💰 ${money(j.pay)}</span>`:''}${j.mins?`<span class="pill time">📺 ${fmtMins(j.mins)}</span>`:''}<span class="pill">${j.rotate?'🔄 Your turn today':repLabel(j.repeat)}</span></div></div>${act}</div>`}).join(''):emptyBox('🪄','No paid jobs yet. Ask a parent to add some!');
   return`<div class="card"><h3>☀️ Daily Quests <span class="pill ${c.ok===c.total?'money':''}" style="float:right">${c.ok}/${c.total}</span></h3><div class="bar" style="--c:var(--yel);margin-bottom:6px"><i style="width:${pct}%"></i></div>${dq}</div>
   <div class="sec">💰 Paid jobs</div>
   ${c.total&&!open?lockMsg:(c.total?`<div class="unlockbanner"><span class="big">🔓</span><span>Quests done — paid jobs unlocked!</span></div>`:'')}
@@ -497,12 +503,15 @@ function pHome(){
 }
 function pJobs(){
   const dl=S.daily.length?S.daily.map(d=>`<div class="row" data-act="editDaily" data-id="${d.id}"><span class="remo">${d.emoji}</span><div class="rmain"><b>${esc(d.title)}</b><span class="sub">${d.kids&&d.kids.length?d.kids.map(id=>kidById(id)).filter(Boolean).map(k=>esc(k.name)).join(', '):'Everyone'}</span></div><span class="chev">›</span></div>`).join(''):emptyBox('☀️','No daily quests. Add some the kids must do first!');
+  const jobRow=(j,tag)=>{const s=jstatus(j);return`<div class="row" data-act="editJob" data-id="${j.id}"><span class="remo">${j.emoji}</span><div class="rmain"><b>${esc(j.title)}</b><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${j.pay?`<span class="pill money">${money(j.pay)}</span>`:''}${j.mins?`<span class="pill time">${fmtMins(j.mins)}</span>`:''}<span class="pill">${j.rotate?'🔄 Weekdays':repLabel(j.repeat)}</span>${tag||''}</div></div>${s==='pending'?`<span class="pill warn">⏳</span>`:s==='approved'?`<span class="pill money">✅</span>`:''}<span class="chev">›</span></div>`};
   const groups=S.kids.map(k=>{
-    const js=S.jobs.filter(j=>j.kidId===k.id);
-    const rows=js.length?js.map(j=>{const s=jstatus(j);return`<div class="row" data-act="editJob" data-id="${j.id}"><span class="remo">${j.emoji}</span><div class="rmain"><b>${esc(j.title)}</b><div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${j.pay?`<span class="pill money">${money(j.pay)}</span>`:''}${j.mins?`<span class="pill time">${fmtMins(j.mins)}</span>`:''}<span class="pill">${repLabel(j.repeat)}</span></div></div>${s==='pending'?`<span class="pill warn">⏳</span>`:s==='approved'?`<span class="pill money">✅</span>`:''}<span class="chev">›</span></div>`}).join(''):`<p class="hint" style="margin:4px">No jobs yet</p>`;
+    const js=S.jobs.filter(j=>!j.rotate&&j.kidId===k.id);
+    const rows=js.length?js.map(j=>jobRow(j)).join(''):`<p class="hint" style="margin:4px">No jobs yet</p>`;
     return`<div class="card"><h3>${k.avatar} ${esc(k.name)}'s paid jobs</h3>${rows}</div>`}).join('');
+  const rots=S.jobs.filter(j=>j.rotate);
+  const rotCard=rots.length?`<div class="card"><h3>🔄 Taking turns</h3><p class="hint" style="margin:0 0 6px">Moves to the next kid each weekday (Mon–Fri).</p>${rots.map(j=>{const a=kidById(assignee(j));return jobRow(j,`<span class="pill warn">${a?a.avatar+' '+esc(a.name)+' today':'Weekend off'}</span>`)}).join('')}</div>`:'';
   return`<div class="card"><h3>☀️ Daily quests</h3><p class="hint" style="margin:0 0 6px">Must be done each day before paid jobs unlock.</p>${dl}<button class="btn sm purple block" data-act="newDaily">+ Daily quest</button></div>
-  ${groups}<button class="btn pink block big" data-act="newJob">+ New paid job</button>`;
+  ${groups}${rotCard}<button class="btn pink block big" data-act="newJob">+ New paid job</button>`;
 }
 function pMoney(){
   if(!ui.moneyKid||!kidById(ui.moneyKid))ui.moneyKid=S.kids[0].id;
@@ -518,6 +527,7 @@ function pSettings(){
   <div class="card"><h3>🔐 Parent PIN</h3><button class="btn ghost block" data-act="changePin" style="margin-top:0">Change PIN</button></div>
   <div class="card"><h3>☁️ Share between phones</h3><p class="hint" style="margin:0 0 8px">On each other phone, open this site and choose <b>"My family is already set up on another phone"</b>, then enter this code. Keep it private.</p><div class="pill warn" style="font-size:20px;letter-spacing:2px;margin-bottom:8px">${famCode?esc(famCode):'—'}</div><p class="hint" style="margin:0 0 8px">${syncState==='synced'?'✅ Syncing — changes show up on every phone within a few seconds.':'📱 Not syncing right now — changes are saved on this phone and will sync when the connection is back.'}</p><button class="btn ghost sm" data-act="joinCode">Use a different code</button></div>
   <div class="card"><h3>📲 On your iPhone</h3><p class="hint" style="margin:0">Tap the Share button in Safari, then <b>Add to Home Screen</b> to open Pocket Pals like an app.</p></div>
+  <p class="hint" style="text-align:center;margin:16px 0 0">Pocket Pals v2 · monthly jobs, multi-kid edit, weekday turns</p>
   <button class="btn danger block" data-act="resetAll">Erase everything</button>`;
 }
 
@@ -551,14 +561,17 @@ function sheetDaily(d){
    ${d?`<button class="btn danger block" data-act="delDaily" data-id="${d.id}">Delete</button>`:''}`);
 }
 function sheetJob(j,preKid){
+  const sel=j?(j.rotate?(j.kids||[]):[j.kidId]):(preKid?[preKid]:[S.kids[0].id]);
   openSheet(j?'✏️ Edit job':'🧹 New paid job',
   `${field('What is the job?',`<input name="title" maxlength="34" placeholder="e.g. Wash the car" value="${esc(j?j.title:'')}" autocomplete="off">`)}
+   ${field('Who does it? (pick one or more)',chips('kids',S.kids.map(k=>({v:k.id,l:k.avatar+' '+esc(k.name)})),sel,true))}
+   ${field('How should it work?',chips('mode',[{v:'each',l:'👧 Each kid separately'},{v:'turns',l:'🔄 Take turns each weekday'}],j&&j.rotate?'turns':'each'))}
+   <p class="hint" style="margin:-6px 0 12px"><b>Each kid separately:</b> every kid picked gets their own copy to do and be paid for.<br><b>Take turns:</b> pick 2 or more kids. The job moves to the next kid each weekday (Mon–Fri) and repeats daily.</p>
    ${field('Picture',chips('emo',JOBEMO.map(e=>({v:e,l:e})),j?j.emoji:'🧹'))}
    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
    ${field('Pay ($)',`<input name="pay" inputmode="decimal" placeholder="0.00" value="${j&&j.pay?j.pay/100:''}" autocomplete="off">`)}
    ${field('Screen time (min)',`<input name="mins" inputmode="numeric" placeholder="0" value="${j&&j.mins?j.mins:''}" autocomplete="off">`)}</div>
-   ${field('How often?',chips('rep',[{v:'once',l:'☝️ Once'},{v:'daily',l:'🔁 Daily'},{v:'weekly',l:'🔁 Weekly'}],j?j.repeat:'once'))}
-   ${field(j?'For':'For (pick one or more)',chips('kids',S.kids.map(k=>({v:k.id,l:k.avatar+' '+esc(k.name)})),j?(j.kidId?[j.kidId]:[]):(preKid?[preKid]:[S.kids[0].id]),!j))}
+   ${field('How often?',chips('rep',[{v:'once',l:'☝️ Once'},{v:'daily',l:'🔁 Daily'},{v:'weekly',l:'🔁 Weekly'},{v:'monthly',l:'🗓️ Monthly'}],j?j.repeat:'once'))}
    <div class="err" id="err"></div>
    <button class="btn go block" data-act="saveJob" data-id="${j?j.id:''}">Save job</button>
    ${j?`<button class="btn danger block" data-act="delJob" data-id="${j.id}">Delete job</button>`:''}`);
@@ -629,7 +642,7 @@ function loadDemo(){
   log[today()]={[mia.id]:{[d[0].id]:'ok'}};
   if(!famCode)setCode(newCode());
   S={v:1,updated:0,pin:'1234',settings:{approveDaily:false},kids:[mia,leo],daily:d,log,
-   jobs:[mk(mia,'Wash the car','🚗',500,30,'once'),mk(mia,'Unload dishwasher','🍽️',200,15,'daily'),mk(mia,'Weed the garden','🌱',600,20,'weekly'),mk(leo,'Walk the dog','🐕',300,20,'daily'),mk(leo,'Take the bins out','🗑️',200,10,'weekly'),Object.assign(mk(leo,'Vacuum the lounge','🧹',400,25,'once','pending'),{doneOn:today()})],
+   jobs:[mk(mia,'Wash the car','🚗',500,30,'once'),mk(mia,'Unload dishwasher','🍽️',200,15,'daily'),mk(mia,'Weed the garden','🌱',600,20,'weekly'),mk(leo,'Walk the dog','🐕',300,20,'daily'),Object.assign(mk(leo,'Take the bins out','🗑️',200,10,'daily'),{rotate:true,kids:[mia.id,leo.id]}),Object.assign(mk(leo,'Vacuum the lounge','🧹',400,25,'once','pending'),{doneOn:today()})],
    goals:[g1,g2,g3],
    ledger:[L(mia,9,'deposit',2000,0,'Birthday: Nan'),L(mia,7,'earn',500,30,'Wash the car'),L(mia,5,'earn',200,15,'Unload dishwasher'),L(mia,4,'earn',600,20,'Weed the garden'),L(mia,3,'withdraw',-600,0,'Cash handed over: ice cream trip'),L(mia,3,'screen-use',0,-45,'Movie night'),L(mia,2,'earn',200,15,'Unload dishwasher'),L(mia,1,'earn',300,0,'Pocket money bonus'),
           L(leo,6,'earn',300,20,'Walk the dog'),L(leo,5,'earn',200,10,'Take the bins out'),L(leo,4,'deposit',1000,0,'Pocket money'),L(leo,2,'earn',300,20,'Walk the dog'),L(leo,2,'screen-use',0,-20,'Minecraft')]};
@@ -678,13 +691,13 @@ const A={
     else if(!cur)toast('Nice one! ⭐');
   },
   claimJob(d){
-    const j=S.jobs.find(x=>x.id===d.id);if(!j||!unlocked(j.kidId))return;
-    j.status='pending';j.doneOn=today();persist();render();toast('Sent to a parent to check ⏳');
+    const j=S.jobs.find(x=>x.id===d.id);const me=ui.who;if(!j||!isMine(j,me)||!unlocked(me))return;
+    j.status='pending';j.doneOn=today();j.doneBy=me;persist();render();toast('Sent to a parent to check ⏳');
   },
   approveJob(d){
     const j=S.jobs.find(x=>x.id===d.id);if(!j)return;
     j.status='approved';j.approvedOn=today();
-    addEntry({kidId:j.kidId,type:'earn',amount:j.pay||0,mins:j.mins||0,note:j.title});
+    addEntry({kidId:doneByOf(j),type:'earn',amount:j.pay||0,mins:j.mins||0,note:j.title});
     persist();render();confetti(70);toast('Approved! '+(j.pay?money(j.pay):'')+(j.mins?' +'+fmtMins(j.mins):'')+' added ⭐');
   },
   redoJob(d){const j=S.jobs.find(x=>x.id===d.id);if(!j)return;j.status='open';persist();render();toast('Sent back to try again')},
@@ -719,13 +732,27 @@ const A={
   approveJobClose(d){closeSheet();A.approveJob(d)},
   editJobForce(d){sheetJob(S.jobs.find(x=>x.id===d.id))},
   saveJob(d){
-    const title=val('title'),emoji=getChip('emo')||'🧹',pay=parseMoney(val('pay')),mins=Math.max(0,parseInt(val('mins'))||0),repeat=getChip('rep')||'once';
-    const kids=d.id?[getChip('kids')]:getChip('kids',true);
+    const title=val('title'),emoji=getChip('emo')||'🧹',pay=parseMoney(val('pay')),mins=Math.max(0,parseInt(val('mins'))||0);
+    let repeat=getChip('rep')||'once';
+    const kids=getChip('kids',true).filter(kidById),turns=getChip('mode')==='turns';
     if(!title)return setErr('Give the job a name.');
-    if(!kids.length||!kids[0])return setErr('Pick who it is for.');
+    if(!kids.length)return setErr('Pick who it is for.');
+    if(turns&&kids.length<2)return setErr('Taking turns needs 2 or more kids.');
     if(!pay&&!mins)return setErr('Add some pay or screen time.');
-    if(d.id){Object.assign(S.jobs.find(x=>x.id===d.id),{title,emoji,pay,mins,repeat,kidId:kids[0]})}
-    else kids.forEach(kid=>S.jobs.push({id:uid(),kidId:kid,title,emoji,pay,mins,repeat,status:'open',createdOn:today()}));
+    const base={title,emoji,pay,mins,repeat};
+    const j=d.id?S.jobs.find(x=>x.id===d.id):null;
+    if(turns){
+      const f=Object.assign({},base,{repeat:'daily',rotate:true,kids,kidId:kids[0]});
+      if(j)Object.assign(j,f);else S.jobs.push(Object.assign({id:uid(),status:'open',createdOn:today()},f));
+    }else{
+      let rest=kids;
+      if(j){
+        const keep=(!j.rotate&&kids.includes(j.kidId))?j.kidId:kids[0];
+        Object.assign(j,base,{kidId:keep,rotate:false});delete j.kids;
+        rest=kids.filter(x=>x!==keep);
+      }
+      rest.forEach(kid=>S.jobs.push(Object.assign({id:uid(),kidId:kid,status:'open',createdOn:today()},base)));
+    }
     persist();closeSheet();render();toast('Job saved ✅');
   },
   delJob(d){confirmSheet('Delete this job?','Money already paid stays in the history.','Delete',()=>{S.jobs=S.jobs.filter(x=>x.id!==d.id);persist();render()})},
@@ -768,7 +795,7 @@ const A={
     persist();closeSheet();render();
   },
   delKid(d){const k=kidById(d.id);confirmSheet('Remove '+esc(k.name)+'?','All their jobs, goals and money history will be deleted.','Remove',()=>{
-    S.kids=S.kids.filter(x=>x.id!==d.id);S.jobs=S.jobs.filter(x=>x.kidId!==d.id);S.goals=S.goals.filter(x=>x.kidId!==d.id);S.ledger=S.ledger.filter(x=>x.kidId!==d.id);S.daily.forEach(x=>{x.kids=(x.kids||[]).filter(i=>i!==d.id)});
+    S.kids=S.kids.filter(x=>x.id!==d.id);S.jobs=S.jobs.filter(x=>{if(x.rotate){x.kids=(x.kids||[]).filter(i=>i!==d.id);if(!x.kids.length)return false;if(x.kids.length===1){x.rotate=false;x.kidId=x.kids[0];delete x.kids}else x.kidId=x.kids[0];return true}return x.kidId!==d.id});S.goals=S.goals.filter(x=>x.kidId!==d.id);S.ledger=S.ledger.filter(x=>x.kidId!==d.id);S.daily.forEach(x=>{x.kids=(x.kids||[]).filter(i=>i!==d.id)});
     if(ui.moneyKid===d.id)ui.moneyKid=null;
     if(!S.kids.length){ui.who=null}
     persist();render()})},
